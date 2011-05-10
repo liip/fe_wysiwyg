@@ -27,8 +27,8 @@ function wysiwyg_features_export_options() {
 function wysiwyg_features_export($data, &$export, $module_name = '') {
   // The wysiwyg_default_formats() hook integration is provided by the
   // features module so we need to add it as a dependency.
-  $export['dependencies']['features'] = 'features';
   $export['dependencies']['wysiwyg'] = 'wysiwyg';
+  $export['dependencies']['fe_wysiwyg'] = 'fe_wysiwyg';
 
   foreach ($data as $name) {
     if ($profile = _features_wysiwyg_profile_load($name)) {
