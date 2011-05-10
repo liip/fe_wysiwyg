@@ -6,8 +6,8 @@
 function wysiwyg_features_api() {
   return array(
     'wysiwyg' => array(
-      'name' => t('Wysiwyg profile'),
-      'default_hook' => 'wysiwyg_default_profiles', // TODO check this
+      'name' => t('Wysiwyg profiles'),
+      'default_hook' => 'wysiwyg_default_profiles',
       'default_file' => FEATURES_DEFAULTS_INCLUDED,
       'feature_source' => TRUE
     ),
@@ -18,9 +18,7 @@ function wysiwyg_features_api() {
  * Implementation of hook_features_export_options().
  */
 function wysiwyg_features_export_options() {
-  $options = array();
-  // TODO list all existing wysiwyg profiles
-  return $options;
+  return _features_wysiwyg_profiles_list();
 }
 
 /**
@@ -30,10 +28,17 @@ function wysiwyg_features_export($data, &$export, $module_name = '') {
   // The wysiwyg_default_formats() hook integration is provided by the
   // features module so we need to add it as a dependency.
   $export['dependencies']['features'] = 'features';
+  $export['dependencies']['wysiwyg'] = 'wysiwyg';
 
-  // TODO add wysiwyg profiles named in $data to $export
+  foreach ($data as $name) {
+    if ($profile = _features_wysiwyg_profile_load($name)) {
+      // Add profile to exports
+      $export['features']['wysiwyg'][$profile->format] = $profile->format;
 
-  // TODO add each profile dependencies (editors)
+      // The editor module is included as a dependency
+      $export['dependencies'][$profile->editor] = $profile->editor;
+    }
+  }
 
   $pipe = array();
   return $pipe;
@@ -48,10 +53,10 @@ function wysiwyg_features_export_render($module, $data, $export = NULL) {
   $code[] = '';
 
   foreach ($data as $name) {
-    if ($profile = features_wysiwyg_profile_load($name)) {
+    if ($profile = _features_wysiwyg_profile_load($name)) {
       $profile_export = features_var_export($profile, '  ');
-      $profile_identifier = features_var_export($profile->profile); // TODO depend on $profile structure
-      $code[] = "  // Exported profile: {$profile->name}"; // TODO depend on $profile structure
+      $profile_identifier = features_var_export($profile->format);
+      $code[] = "  // Exported profile: {$profile->format}";
       $code[] = "  \$profiles[{$profile_identifier}] = {$profile_export};";
       $code[] = "";
     }
@@ -75,7 +80,15 @@ function wysiwyg_features_revert($module) {
 function wysiwyg_features_rebuild($module) {
   if ($defaults = features_get_default('wysiwyg', $module)) {
     foreach ($defaults as $profile) {
-      // TODO save profile into the DB
+      db_merge('wysiwyg')
+        ->key(array('format' => $profile['format']))
+        ->fields(array(
+          'editor' => $profile['editor'],
+          'settings' => serialize($profile['settings']),
+        ))
+        ->execute();
+
+      wysiwyg_profile_cache_clear();
     }
   }
 }
@@ -83,6 +96,15 @@ function wysiwyg_features_rebuild($module) {
 /**
  * Load a wysiwyg format by its name.
  */
-function features_wysiwyg_profile_load($name) {
-  // TODO use wysiwyg API to load profile by name
+function _features_wysiwyg_profile_load($name) {
+  return wysiwyg_get_profile($name);
+}
+
+/**
+ * Load a wysiwyg format by its name.
+ */
+function _features_wysiwyg_profiles_list () {
+  $profiles = wysiwyg_profile_load_all();
+  $names = array_keys($profiles);
+  return array_combine($names, $names);
 }
