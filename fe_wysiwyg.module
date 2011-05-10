@@ -1,0 +1,88 @@
+<?php
+
+/**
+ * Implementation of hook_features_api().
+ */
+function wysiwyg_features_api() {
+  return array(
+    'wysiwyg' => array(
+      'name' => t('Wysiwyg profile'),
+      'default_hook' => 'wysiwyg_default_profiles', // TODO check this
+      'default_file' => FEATURES_DEFAULTS_INCLUDED,
+      'feature_source' => TRUE
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_features_export_options().
+ */
+function wysiwyg_features_export_options() {
+  $options = array();
+  // TODO list all existing wysiwyg profiles
+  return $options;
+}
+
+/**
+ * Implementation of hook_features_export().
+ */
+function wysiwyg_features_export($data, &$export, $module_name = '') {
+  // The wysiwyg_default_formats() hook integration is provided by the
+  // features module so we need to add it as a dependency.
+  $export['dependencies']['features'] = 'features';
+
+  // TODO add wysiwyg profiles named in $data to $export
+
+  // TODO add each profile dependencies (editors)
+
+  $pipe = array();
+  return $pipe;
+}
+
+/**
+ * Implementation of hook_features_export_render().
+ */
+function wysiwyg_features_export_render($module, $data, $export = NULL) {
+  $code = array();
+  $code[] = '  $profiles = array();';
+  $code[] = '';
+
+  foreach ($data as $name) {
+    if ($profile = features_wysiwyg_profile_load($name)) {
+      $profile_export = features_var_export($profile, '  ');
+      $profile_identifier = features_var_export($profile->profile); // TODO depend on $profile structure
+      $code[] = "  // Exported profile: {$profile->name}"; // TODO depend on $profile structure
+      $code[] = "  \$profiles[{$profile_identifier}] = {$profile_export};";
+      $code[] = "";
+    }
+  }
+
+  $code[] = '  return $profiles;';
+  $code = implode("\n", $code);
+  return array('wysiwyg_default_profiles' => $code);
+}
+
+/**
+ * Implementation of hook_features_revert().
+ */
+function wysiwyg_features_revert($module) {
+  return wysiwyg_features_rebuild($module);
+}
+
+/**
+ * Implementation of hook_features_rebuild().
+ */
+function wysiwyg_features_rebuild($module) {
+  if ($defaults = features_get_default('wysiwyg', $module)) {
+    foreach ($defaults as $profile) {
+      // TODO save profile into the DB
+    }
+  }
+}
+
+/**
+ * Load a wysiwyg format by its name.
+ */
+function features_wysiwyg_profile_load($name) {
+  // TODO use wysiwyg API to load profile by name
+}

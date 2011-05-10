@@ -1,0 +1,7 @@
+name = "FE wysiwyg"
+description = "Wysiwyg profiles as features."
+package = "Features extra"
+core = "7.x"
+
+dependencies[] = wysiwyg
+dependencies[] = features
